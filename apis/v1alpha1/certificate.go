@@ -127,6 +127,9 @@ type CertificateSpec struct {
 	SubjectAlternativeNames []*string `json:"subjectAlternativeNames,omitempty"`
 	// One or more resource tags to associate with the certificate.
 	Tags []*Tag `json:"tags,omitempty"`
+	// Configuration for exporting the certificate to a Kubernetes Secret.
+	// Only valid when options.export is ENABLED.
+	ExportTo *ExportConfiguration `json:"exportTo,omitempty"` 
 }
 
 // CertificateStatus defines the observed state of Certificate

@@ -78,6 +78,21 @@ type CertificateDetail struct {
 // For general information, see Certificate Transparency Logging (https://docs.aws.amazon.com/acm/latest/userguide/acm-concepts.html#concept-transparency).
 type CertificateOptions struct {
 	CertificateTransparencyLoggingPreference *string `json:"certificateTransparencyLoggingPreference,omitempty"`
+	Export                                   *string `json:"export,omitempty"`
+}
+
+// Configuration for exporting certificate to a Kubernetes Secret
+type ExportConfiguration struct {
+	SecretName      *string                           `json:"secretName,omitempty"`
+	SecretNamespace *string                           `json:"secretNamespace,omitempty"`
+	Passphrase      *SecretKeyReference               `json:"passphrase,omitempty"`
+}
+
+// SecretKeyReference for passphrase with secretName field
+type SecretKeyReference struct {
+	SecretName      *string `json:"secretName,omitempty"`
+	SecretNamespace *string `json:"secretNamespace,omitempty"`
+	Key             *string `json:"key,omitempty"`
 }
 
 // This structure is returned in the response object of ListCertificates action.
