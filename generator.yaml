@@ -62,6 +62,10 @@ resources:
         is_immutable: true
         compare:
           is_ignored: true
+      CertificateExport:
+        type: "string"
+        is_immutable: true
+        is_required: false
       PrivateKey:
         type: "bytes"
         is_secret: true

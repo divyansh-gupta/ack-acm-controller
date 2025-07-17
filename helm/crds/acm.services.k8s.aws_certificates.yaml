@@ -126,6 +126,11 @@ spec:
                 x-kubernetes-validations:
                 - message: Value is immutable once set
                   rule: self == oldSelf
+              certificateExport:
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               domainName:
                 description: |-
                   Fully qualified domain name (FQDN), such as www.example.com, that you want
@@ -202,15 +207,6 @@ spec:
                 properties:
                   certificateTransparencyLoggingPreference:
                     type: string
-                  export:
-                    description: |-
-                      Specifies whether the certificate can be exported. Set to ENABLED to allow
-                      exporting the certificate and private key. This cannot be changed after
-                      certificate issuance.
-                    type: string
-                    enum:
-                    - ENABLED
-                    - DISABLED
                 type: object
               privateKey:
                 description: |-
@@ -274,37 +270,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              exportTo:
-                description: |-
-                  Configuration for exporting the certificate to a Kubernetes Secret.
-                  Only valid when options.export is ENABLED.
-                properties:
-                  secretName:
-                    description: Name of the Secret to create with exported certificate data.
-                    type: string
-                  secretNamespace:
-                    description: Namespace for the Secret. Defaults to the Certificate namespace.
-                    type: string
-                  passphrase:
-                    description: Reference to a Secret containing the passphrase for encrypting the private key.
-                    properties:
-                      key:
-                        description: Key is the key within the secret
-                        type: string
-                      secretName:
-                        description: secretName is unique within a namespace to reference a secret resource.
-                        type: string
-                      secretNamespace:
-                        description: secretNamespace defines the space within which the secret name must be unique.
-                        type: string
-                    required:
-                    - key
-                    - secretName
-                    type: object
-                required:
-                - secretName
-                - passphrase
-                type: object
             type: object
           status:
             description: CertificateStatus defines the observed state of Certificate

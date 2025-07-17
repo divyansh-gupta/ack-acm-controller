@@ -300,6 +300,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = new(corev1alpha1.SecretKeyReference)
 		**out = **in
 	}
+	if in.CertificateExport != nil {
+		in, out := &in.CertificateExport, &out.CertificateExport
+		*out = new(string)
+		**out = **in
+	}
 	if in.DomainName != nil {
 		in, out := &in.DomainName, &out.DomainName
 		*out = new(string)

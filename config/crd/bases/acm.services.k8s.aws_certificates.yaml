@@ -126,6 +126,11 @@ spec:
                 x-kubernetes-validations:
                 - message: Value is immutable once set
                   rule: self == oldSelf
+              certificateExport:
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               domainName:
                 description: |-
                   Fully qualified domain name (FQDN), such as www.example.com, that you want

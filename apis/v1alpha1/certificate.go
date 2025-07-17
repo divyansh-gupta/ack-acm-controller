@@ -46,6 +46,8 @@ type CertificateSpec struct {
 	CertificateAuthorityRef *ackv1alpha1.AWSResourceReferenceWrapper `json:"certificateAuthorityRef,omitempty"`
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	CertificateChain *ackv1alpha1.SecretKeyReference `json:"certificateChain,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
+	CertificateExport *string `json:"certificateExport,omitempty"`
 	// Fully qualified domain name (FQDN), such as www.example.com, that you want
 	// to secure with an ACM certificate. Use an asterisk (*) to create a wildcard
 	// certificate that protects several sites in the same domain. For example,
@@ -127,9 +129,6 @@ type CertificateSpec struct {
 	SubjectAlternativeNames []*string `json:"subjectAlternativeNames,omitempty"`
 	// One or more resource tags to associate with the certificate.
 	Tags []*Tag `json:"tags,omitempty"`
-	// Configuration for exporting the certificate to a Kubernetes Secret.
-	// Only valid when options.export is ENABLED.
-	ExportTo *ExportConfiguration `json:"exportTo,omitempty"` 
 }
 
 // CertificateStatus defines the observed state of Certificate
