@@ -1,19 +1,11 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: cert-passphrase
-  namespace: default
-type: Opaque
-data:
-  passphrase: bXlzZWNyZXRwYXNzcGhyYXNl
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: exported-cert
+  name: exported-cert-secret
   namespace: default
 type: kubernetes.io/tls
-data: {}
+data:
+  passphrase: bXlzZWNyZXRwYXNzcGhyYXNl
 ---
 apiVersion: acm.services.k8s.aws/v1alpha1
 kind: Certificate
@@ -23,10 +15,8 @@ metadata:
 spec:
   domainName: guptadiv.people.aws.dev
   options:
-    export: ENABLED
     certificateTransparencyLoggingPreference: DISABLED
-  exportTo:
-    secretName: exported-cert
-    passphrase:
-      secretName: cert-passphrase
-      key: passphrase
+  exportTo: 
+    namespace: default
+    name: exported-cert-secret
+    key: passphrase

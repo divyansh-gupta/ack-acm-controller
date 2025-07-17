@@ -1,0 +1,9 @@
+apiVersion: acm.services.k8s.aws/v1alpha1
+kind: Certificate
+metadata:
+  name: public-cert
+  namespace: default
+spec:
+  domainName: guptadiv.people.aws.dev
+  options:
+    certificateTransparencyLoggingPreference: DISABLED

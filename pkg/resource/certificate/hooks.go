@@ -64,6 +64,18 @@ func validatePublicValidationOptions(
 	return nil
 }
 
+// validateExportCertificateOptions
+func validateExportCertificateOptions(
+	r *resource,
+) error {
+	if r.ko.Spec.ExportTo != nil {
+		if r.ko.Spec.ExportTo == nil {
+			return ackerr.NewTerminalError(errors.New("exportTo requires a name field that refers to a Secret"))
+		}
+	}
+	return nil
+}
+
 // maybeImportCertificate imports a certificate into ACM if Spec.Certificate is set.
 func (rm *resourceManager) maybeImportCertificate(ctx context.Context, r *resource) (*resource, bool, error) {
 	certSpec := r.ko.Spec
