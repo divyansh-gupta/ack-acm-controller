@@ -76,9 +76,6 @@ resources:
       ExportTo:
         is_immutable: true
         is_secret: true
-        is_required: false
-        compare:
-          is_ignored: true
       KeyAlgorithm:
         late_initialize: {}
         is_immutable: true

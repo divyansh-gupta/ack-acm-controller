@@ -60,13 +60,6 @@ func newResourceDelta(
 	if !reflect.DeepEqual(a.ko.Spec.CertificateAuthorityRef, b.ko.Spec.CertificateAuthorityRef) {
 		delta.Add("Spec.CertificateAuthorityRef", a.ko.Spec.CertificateAuthorityRef, b.ko.Spec.CertificateAuthorityRef)
 	}
-	if ackcompare.HasNilDifference(a.ko.Spec.CertificateExport, b.ko.Spec.CertificateExport) {
-		delta.Add("Spec.CertificateExport", a.ko.Spec.CertificateExport, b.ko.Spec.CertificateExport)
-	} else if a.ko.Spec.CertificateExport != nil && b.ko.Spec.CertificateExport != nil {
-		if *a.ko.Spec.CertificateExport != *b.ko.Spec.CertificateExport {
-			delta.Add("Spec.CertificateExport", a.ko.Spec.CertificateExport, b.ko.Spec.CertificateExport)
-		}
-	}
 	if ackcompare.HasNilDifference(a.ko.Spec.DomainName, b.ko.Spec.DomainName) {
 		delta.Add("Spec.DomainName", a.ko.Spec.DomainName, b.ko.Spec.DomainName)
 	} else if a.ko.Spec.DomainName != nil && b.ko.Spec.DomainName != nil {
