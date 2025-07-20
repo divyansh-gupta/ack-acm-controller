@@ -18,10 +18,14 @@ import (
 	"errors"
 	"fmt"
 
+	k8scorev1 "k8s.io/api/core/v1"
+
+	"github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/acm"
+	smithy "github.com/aws/smithy-go"
 
 	"github.com/aws-controllers-k8s/acm-controller/pkg/tags"
 )
@@ -64,15 +68,68 @@ func validatePublicValidationOptions(
 	return nil
 }
 
-// validateExportCertificateOptions
 func validateExportCertificateOptions(
 	r *resource,
 ) error {
 	if r.ko.Spec.ExportTo != nil {
-		if r.ko.Spec.ExportTo == nil {
+		if r.ko.Spec.ExportTo.Name == "" {
 			return ackerr.NewTerminalError(errors.New("exportTo requires a name field that refers to a Secret"))
 		}
 	}
+	return nil
+}
+
+func (rm *resourceManager) maybeExportCertificate(
+	ctx context.Context,
+	r *resource,
+) error {
+	if r.ko.Spec.ExportTo == nil {
+		return nil
+	}
+
+	secretReference := new(k8scorev1.SecretReference)
+	secretReference.Name = r.ko.Spec.ExportTo.Name
+	if r.ko.Spec.ExportTo.Namespace != "" {
+		secretReference.Namespace = r.ko.Spec.ExportTo.Namespace
+	}
+
+	passphrase, err := rm.rr.SecretValueFromReference(ctx, &v1alpha1.SecretKeyReference{
+		SecretReference: *secretReference,
+		Key:             "certificate",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	input := &svcsdk.ExportCertificateInput{}
+	if r.ko.Status.ACKResourceMetadata != nil && r.ko.Status.ACKResourceMetadata.ARN != nil {
+		input.CertificateArn = (*string)(r.ko.Status.ACKResourceMetadata.ARN)
+	}
+	input.Passphrase = []byte(passphrase)
+
+	resp, err := rm.sdkapi.ExportCertificate(ctx, input)
+	rm.metrics.RecordAPICall("READ_ONE", "ExportCertificate", err)
+	if err != nil {
+		var awsErr smithy.APIError
+		if errors.As(err, &awsErr) && awsErr.ErrorCode() == "ResourceNotFoundException" {
+			return ackerr.NotFound
+		}
+		return err
+	}
+
+	certificateChain := *resp.Certificate
+	if resp.CertificateChain != nil && *resp.CertificateChain != "" {
+		certificateChain = certificateChain + "\n" + *resp.CertificateChain
+		certificateChain = fmt.Sprintf("%s\n%s", certificateChain, *resp.CertificateChain)
+	}
+	if err := rm.rr.WriteToSecret(ctx, certificateChain, secretReference.Namespace, secretReference.Name, "tls.crt"); err != nil {
+		return err
+	}
+	if err := rm.rr.WriteToSecret(ctx, *resp.PrivateKey, secretReference.Namespace, secretReference.Name, "tls.key"); err != nil {
+		return err
+	}
+
 	return nil
 }
 

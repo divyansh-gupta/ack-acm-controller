@@ -43,6 +43,12 @@ resources:
     reconcile:
       requeue_on_success_seconds: 60
     fields:
+      ExportTo:
+        type: "bytes"
+        is_immutable: true
+        is_secret: true
+        compare:
+          is_ignored: true
       DomainName:
         is_primary_key: false
         is_required: false
@@ -73,9 +79,6 @@ resources:
           resource: CertificateAuthority
           path: Status.ACKResourceMetadata.ARN
         is_immutable: true
-      ExportTo:
-        is_immutable: true
-        is_secret: true
       KeyAlgorithm:
         late_initialize: {}
         is_immutable: true

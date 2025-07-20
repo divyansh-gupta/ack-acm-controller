@@ -5,6 +5,8 @@ metadata:
   namespace: default
 type: kubernetes.io/tls
 data:
+  tls.crt: ""
+  tls.key: ""
   passphrase: bXlzZWNyZXRwYXNzcGhyYXNl
 ---
 apiVersion: acm.services.k8s.aws/v1alpha1
