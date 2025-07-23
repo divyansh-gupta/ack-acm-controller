@@ -15,17 +15,20 @@ package certificate
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"errors"
 	"fmt"
 
-	k8scorev1 "k8s.io/api/core/v1"
+	"encoding/pem"
 
-	"github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackv1alpha1 "github.com/aws-controllers-k8s/runtime/apis/core/v1alpha1"
 	ackerr "github.com/aws-controllers-k8s/runtime/pkg/errors"
 	ackrtlog "github.com/aws-controllers-k8s/runtime/pkg/runtime/log"
 	svcsdk "github.com/aws/aws-sdk-go-v2/service/acm"
 	smithy "github.com/aws/smithy-go"
+	pkcs8 "github.com/youmark/pkcs8"
+	k8scorev1 "k8s.io/api/core/v1"
 
 	"github.com/aws-controllers-k8s/acm-controller/pkg/tags"
 )
@@ -75,6 +78,9 @@ func validateExportCertificateOptions(
 		if r.ko.Spec.ExportTo.Name == "" {
 			return ackerr.NewTerminalError(errors.New("exportTo requires a name field that refers to a Secret"))
 		}
+		if r.ko.Spec.ExportPassphrase == nil {
+			return ackerr.NewTerminalError(errors.New("exporting a certificate requires the ExportPassphrase field"))
+		}
 	}
 	return nil
 }
@@ -83,7 +89,7 @@ func (rm *resourceManager) maybeExportCertificate(
 	ctx context.Context,
 	r *resource,
 ) error {
-	if r.ko.Spec.ExportTo == nil {
+	if r.ko.Spec.ExportTo == nil || r.ko.Spec.ExportPassphrase == nil {
 		return nil
 	}
 
@@ -93,20 +99,11 @@ func (rm *resourceManager) maybeExportCertificate(
 		secretReference.Namespace = r.ko.Spec.ExportTo.Namespace
 	}
 
-	passphrase, err := rm.rr.SecretValueFromReference(ctx, &v1alpha1.SecretKeyReference{
-		SecretReference: *secretReference,
-		Key:             "certificate",
-	})
-
-	if err != nil {
-		return err
-	}
-
 	input := &svcsdk.ExportCertificateInput{}
 	if r.ko.Status.ACKResourceMetadata != nil && r.ko.Status.ACKResourceMetadata.ARN != nil {
 		input.CertificateArn = (*string)(r.ko.Status.ACKResourceMetadata.ARN)
 	}
-	input.Passphrase = []byte(passphrase)
+	input.Passphrase = []byte(*r.ko.Spec.ExportPassphrase)
 
 	resp, err := rm.sdkapi.ExportCertificate(ctx, input)
 	rm.metrics.RecordAPICall("READ_ONE", "ExportCertificate", err)
@@ -120,17 +117,44 @@ func (rm *resourceManager) maybeExportCertificate(
 
 	certificateChain := *resp.Certificate
 	if resp.CertificateChain != nil && *resp.CertificateChain != "" {
-		certificateChain = certificateChain + "\n" + *resp.CertificateChain
-		certificateChain = fmt.Sprintf("%s\n%s", certificateChain, *resp.CertificateChain)
+		certificateChain = certificateChain + *resp.CertificateChain
 	}
 	if err := rm.rr.WriteToSecret(ctx, certificateChain, secretReference.Namespace, secretReference.Name, "tls.crt"); err != nil {
 		return err
 	}
-	if err := rm.rr.WriteToSecret(ctx, *resp.PrivateKey, secretReference.Namespace, secretReference.Name, "tls.key"); err != nil {
+
+	decryptedKey, err := DecryptPrivateKey([]byte(*resp.PrivateKey), []byte(*r.ko.Spec.ExportPassphrase))
+	if err != nil {
+		return err
+	}
+
+	if err := rm.rr.WriteToSecret(ctx, string(decryptedKey), secretReference.Namespace, secretReference.Name, "tls.key"); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func DecryptPrivateKey(encryptedPEM, passphrase []byte) ([]byte, error) {
+	pemBlock, _ := pem.Decode(encryptedPEM)
+	if pemBlock == nil {
+		return nil, errors.New("failed to decode PEM block: no PEM data found")
+	}
+	privateKey, err := pkcs8.ParsePKCS8PrivateKey(pemBlock.Bytes, passphrase)
+	if err != nil {
+		return nil, errors.New("failed to decrypt PEM block")
+	}
+
+	derBytes, err := x509.MarshalPKCS8PrivateKey(privateKey.(*rsa.PrivateKey))
+	if err != nil {
+		return nil, errors.New("failed to marshal PEM block")
+	}
+
+	pemBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: derBytes,
+	})
+	return pemBytes, err
 }
 
 // maybeImportCertificate imports a certificate into ACM if Spec.Certificate is set.

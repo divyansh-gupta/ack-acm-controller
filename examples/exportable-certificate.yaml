@@ -1,24 +1,29 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-app
+---
+apiVersion: v1
 kind: Secret
+type: kubernetes.io/tls
 metadata:
   name: exported-cert-secret
-  namespace: default
-type: kubernetes.io/tls
+  namespace: demo-app
 data:
   tls.crt: ""
   tls.key: ""
-  passphrase: bXlzZWNyZXRwYXNzcGhyYXNl
 ---
 apiVersion: acm.services.k8s.aws/v1alpha1
 kind: Certificate
 metadata:
   name: exportable-public-cert
-  namespace: default
+  namespace: demo-app
 spec:
   domainName: guptadiv.people.aws.dev
   options:
-    certificateTransparencyLoggingPreference: DISABLED
+    certificateTransparencyLoggingPreference: ENABLED
+  exportPassphrase: bXlzZWNyZXRwYXNzcGhyYXNl
   exportTo: 
-    namespace: default
+    namespace: demo-app
     name: exported-cert-secret
-    key: passphrase
+    key: tls.crt

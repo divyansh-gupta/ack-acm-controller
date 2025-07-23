@@ -159,6 +159,11 @@ spec:
                 x-kubernetes-validations:
                 - message: Value is immutable once set
                   rule: self == oldSelf
+              exportPassphrase:
+                type: string
+                x-kubernetes-validations:
+                - message: Value is immutable once set
+                  rule: self == oldSelf
               exportTo:
                 description: |-
                   SecretKeyReference combines a k8s corev1.SecretReference with a
