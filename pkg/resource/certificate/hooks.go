@@ -93,6 +93,12 @@ func (rm *resourceManager) maybeExportCertificate(
 		return nil
 	}
 
+	// Get the passphrase from the secret reference
+	passphrase, err := rm.rr.SecretValueFromReference(ctx, r.ko.Spec.ExportPassphrase)
+	if err != nil || passphrase == "" {
+		return ackerr.NewTerminalError(errors.New("could not resolve exportPassphrase secret reference"))
+	}
+
 	secretReference := new(k8scorev1.SecretReference)
 	secretReference.Name = r.ko.Spec.ExportTo.Name
 	if r.ko.Spec.ExportTo.Namespace != "" {
@@ -105,7 +111,7 @@ func (rm *resourceManager) maybeExportCertificate(
 	if r.ko.Status.ACKResourceMetadata != nil && r.ko.Status.ACKResourceMetadata.ARN != nil {
 		input.CertificateArn = (*string)(r.ko.Status.ACKResourceMetadata.ARN)
 	}
-	input.Passphrase = []byte(*r.ko.Spec.ExportPassphrase)
+	input.Passphrase = []byte(passphrase)
 
 	resp, err := rm.sdkapi.ExportCertificate(ctx, input)
 	rm.metrics.RecordAPICall("READ_ONE", "ExportCertificate", err)
@@ -125,7 +131,7 @@ func (rm *resourceManager) maybeExportCertificate(
 		return err
 	}
 
-	decryptedKey, err := DecryptPrivateKey([]byte(*resp.PrivateKey), []byte(*r.ko.Spec.ExportPassphrase))
+	decryptedKey, err := DecryptPrivateKey([]byte(*resp.PrivateKey), []byte(passphrase))
 	if err != nil {
 		return err
 	}

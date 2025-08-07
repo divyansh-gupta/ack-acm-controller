@@ -64,7 +64,7 @@ type CertificateSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	DomainValidationOptions []*DomainValidationOption `json:"domainValidationOptions,omitempty"`
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
-	ExportPassphrase *string `json:"exportPassphrase,omitempty"`
+	ExportPassphrase *ackv1alpha1.SecretKeyReference `json:"exportPassphrase,omitempty"`
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable once set"
 	ExportTo *ackv1alpha1.SecretKeyReference `json:"exportTo,omitempty"`
 	// Specifies the algorithm of the public and private key pair that your certificate

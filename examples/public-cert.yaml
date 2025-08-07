@@ -4,6 +4,6 @@ metadata:
   name: public-cert
   namespace: default
 spec:
-  domainName: guptadiv.people.aws.dev
+  domainName: ${LOAD_BALANCER_HOSTNAME}
   options:
     certificateTransparencyLoggingPreference: DISABLED
