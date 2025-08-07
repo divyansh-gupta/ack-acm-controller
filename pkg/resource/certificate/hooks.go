@@ -97,6 +97,8 @@ func (rm *resourceManager) maybeExportCertificate(
 	secretReference.Name = r.ko.Spec.ExportTo.Name
 	if r.ko.Spec.ExportTo.Namespace != "" {
 		secretReference.Namespace = r.ko.Spec.ExportTo.Namespace
+	} else {
+		secretReference.Namespace = r.ko.Namespace
 	}
 
 	input := &svcsdk.ExportCertificateInput{}
@@ -132,6 +134,8 @@ func (rm *resourceManager) maybeExportCertificate(
 		return err
 	}
 
+	// No need to update secret annotations since we're now tracking IssuedAt changes
+	// in the template logic using the Certificate object's Status field
 	return nil
 }
 
